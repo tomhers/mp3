@@ -13,7 +13,7 @@
 
 // 
 extern int cgen_debug;
-int count = -1;
+int count = 0;
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -246,6 +246,7 @@ void CgenClassTable::setup_external_functions()
 	types.clear();
 
 	// String_substr
+	types.push_back(stringPtrType);
 	types.push_back(intType);
 	types.push_back(intType);
 	vp.declare(*ct_stream, stringPtrType, "String_substr", types);
@@ -578,7 +579,7 @@ void CgenClassTable::code_constants()
 		string getElementPtrName = "@" + stringName;
 		const_value getElementPtrConst(stringArray, getElementPtrName, false);
 		stringVtableValues.push_back(getElementPtrConst);
-		string structName = "@String." + std::to_string(i);
+		string structName = "String." + std::to_string(i);
 		global_value structValue(stringType, structName);
 
 		vp.init_struct_constant(structValue, stringVtableTypes, stringVtableValues);
@@ -728,7 +729,7 @@ void CgenClassTable::code_main()
 	// to call init_constant
 	const_value constReturnString(returnStringType, returnString, true);
 	// Initialize string as constant
-	vp.init_constant("main.printout.str", constReturnString);
+	//vp.init_constant("main.printout.str", constReturnString);
 
 	// Create an empty vector of operands since main has no parameters
 	vector<operand> mainArgs;
@@ -888,6 +889,19 @@ bool CgenNode::check_basic(string s, bool checkSelfType)
 	return false;
 }
 
+op_type get_method_type(string s)
+{
+	if (s == "Bool" || s == "bool") {
+		return INT1;
+	} else if (s == "Int" || s == "int") {
+		return INT32;
+	} else if (s == "String") {
+		return INT8_PTR;
+	}
+
+	return op_type(s, 1);
+}
+
 string simplify_name(string s)
 {
 	int ct = 0;
@@ -913,10 +927,10 @@ void CgenNode::init_defaults()
 
 	// Generate vtable entries common to all vtables
 	this->vtableValues.push_back(const_value(op_type(INT32), std::to_string(count++), false));
-	string ptrToIntName = "ptrtoint (%" + this->get_type_name() + "* getelementptr (%" + this->get_type_name() + "* null, i32 1) to i32)";
+	string ptrToIntName = "ptrtoint (%" + this->get_type_name() + "* getelementptr (%" + this->get_type_name() + ", %" + this->get_type_name() + "* null, i32 1) to i32)";
 	this->vtableValues.push_back(const_value(op_type(INT32), ptrToIntName, false));
 	int getElementPtrNameLen = (int)(this->get_type_name().length() + 1);
-	string getElementPtrName = "getelementptr ([" + std::to_string(getElementPtrNameLen) + " x i8]* @str." + this->get_type_name() + ", i32 0, i32 0";
+	string getElementPtrName = "getelementptr ([" + std::to_string(getElementPtrNameLen) + " x i8], [" + std::to_string(getElementPtrNameLen) +  " x i8]* @str." + this->get_type_name() + ", i32 0, i32 0)";
 	this->vtableValues.push_back(const_value(op_type(INT8_PTR), getElementPtrName, false));
 	string newClassName = "@" + this->get_type_name() + "_new";
 	this->vtableValues.push_back(const_value(op_type(nameType, 1), newClassName, false));
@@ -1011,7 +1025,7 @@ void CgenNode::init_defaults()
 		this->vtableValues.push_back(selfTypeNameValue);
 
 		// SELF_TYPE_copy
-		string selfCopyName = "bitcast (%Object* (%Object*) * @Object_copy to %Object* (%" + typeName + "*) *)";
+		string selfCopyName = "bitcast (%Object* (%Object*) * @Object_copy to %"+ typeName + "* (%" + typeName + "*) *)";
 		const_value selfCopyValue(op_type(nameType, 1), selfCopyName, false);
 		this->vtableValues.push_back(selfCopyValue);
 	}
@@ -1559,8 +1573,22 @@ operand get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env) {
 void method_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "method" << endl;
+	if (!env->skipAttr) {
+		return;
+	}
 	ValuePrinter vp(*(env->cur_stream));
-	vp.ret(expr->code(env));
+	op_type methodReturnType(get_method_type(return_type->get_string()));
+	op_type classType(env->get_class()->get_type_name(), 1);
+	operand selfOp(classType, "self");
+	vector<operand> methodArgs;
+	string functionName = env->get_class()->get_type_name() + "_" + string(name->get_string());
+	methodArgs.push_back(selfOp);
+	env->localSymbolVec.push_back(self);
+
+	// Loop over formals and save their info
+	for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
+		
+	}
 
 	// Generate abort block after every method
 	vector<op_type> abortTypes;
@@ -2059,6 +2087,8 @@ void attr_class::layout_feature(CgenNode *cls)
 		cls->myVtableAttrTypes.push_back(op_type(INT1));
 	} else if (string(type_decl->get_string()) == string("int") || string(type_decl->get_string()) == string("Int")) {
 		cls->myVtableAttrTypes.push_back(op_type(INT32));
+	} else if (string(type_decl->get_string()) == string("sbyte*")) {
+		cls->myVtableAttrTypes.push_back(op_type(INT8_PTR));
 	} else {
 		cls->myVtableAttrTypes.push_back(op_type(type_decl->get_string(), 1));
 	}

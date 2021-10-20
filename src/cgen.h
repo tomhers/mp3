@@ -202,6 +202,7 @@ public:
 
 	bool skipAttr;
 	operand bitcastResult;
+	vector<Symbol> localSymbolVec;
 
 	// fresh name generation functions
 	string new_name();
