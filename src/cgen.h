@@ -227,6 +227,10 @@ public:
 
 	// Must return the CgenNode for a class given the symbol of its name
 	CgenNode *type_to_class(Symbol t);
+
+	// My functions
+	op_type get_arg_type(string s);
+	vector<op_type> parse_args(string s);
 	
 };
 
