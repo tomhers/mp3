@@ -1645,8 +1645,14 @@ operand assign_class::code(CgenEnvironment *env)
 	operand assignResult = *(env->lookup(name));
 	// Evaluate expression
 	operand exprResult = expr->code(env);
-	// Store result in var_table
-	vp.store(*(env->cur_stream), exprResult, assignResult);
+	// Load operand
+	operand loadOp = vp.load(assignResult.get_type(), assignResult);
+	// Generate a getelementptr for loaded operand
+	int_value zeroOp(0), oneOp(1);
+	op_type exprPtrType(exprResult.get_type().get_ptr_type());
+	operand getElementPtrOp = vp.getelementptr(loadOp.get_type(), loadOp, zeroOp, oneOp, exprPtrType);
+	// Store result
+	vp.store(*(env->cur_stream), exprResult, getElementPtrOp);
 	// Return result
 	return exprResult;
 }
