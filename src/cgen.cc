@@ -1581,14 +1581,46 @@ void method_class::code(CgenEnvironment *env)
 	op_type classType(env->get_class()->get_type_name(), 1);
 	operand selfOp(classType, "self");
 	vector<operand> methodArgs;
-	string functionName = env->get_class()->get_type_name() + "_" + string(name->get_string());
+	string methodName = env->get_class()->get_type_name() + "_" + string(name->get_string());
 	methodArgs.push_back(selfOp);
 	env->localSymbolVec.push_back(self);
 
 	// Loop over formals and save their info
 	for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
-		
+		op_type formalType(env->get_class()->get_ret_type(formals->nth(i)->get_type_decl()->get_string(), true));
+		operand formalOp(formalType, string(formals->nth(i)->get_name()->get_string()));
+		methodArgs.push_back(formalOp);
+		env->localSymbolVec.push_back(formals->nth(i)->get_name());
 	}
+
+	// Define method
+	vp.define(methodReturnType, methodName, methodArgs);
+
+	// Create entry block
+	vp.begin_block("entry");
+
+	// Deal with other formals
+	operand allocaOp;
+	for (int i = 0; i < methodArgs.size(); i++) {
+		allocaOp = vp.alloca_mem(methodArgs.at(i).get_type());
+		if (string(env->localSymbolVec.at(i)->get_string()) == "self") {
+			op_type allocaType(allocaOp.get_type());
+			allocaType.set_id(OBJ_PPTR);
+			allocaOp = operand(allocaType, allocaOp.get_name().substr(1));
+		}
+
+		env->add_local(env->localSymbolVec.at(i), allocaOp);
+		vp.store(methodArgs.at(i), allocaOp);
+	}
+
+	// Generate body of method
+	operand methodResult = expr->code(env);
+	if (methodResult.get_type().get_name() != methodReturnType.get_name()) {
+		methodResult = vp.bitcast(methodResult, methodReturnType);
+	}
+
+	// Return
+	vp.ret(methodResult);
 
 	// Generate abort block after every method
 	vector<op_type> abortTypes;
@@ -1597,6 +1629,8 @@ void method_class::code(CgenEnvironment *env)
 	vp.begin_block(abortBlock);
 	operand abortResult = vp.call(abortTypes, VOID, "abort", true, abortArgs);
 	vp.unreachable();
+
+	vp.end_define();
 }
 
 //
@@ -1854,12 +1888,38 @@ operand object_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "Object" << endl;
 	ValuePrinter vp(*(env->cur_stream));
-	// Find object in lookup table, load and return
+	// Find object in lookup table
 	operand lookupResult = *(env->lookup(name));
+	if (string(lookupResult.get_name()) == "%empty") {
+		lookupResult = *(env->lookup(self));
+	}
+
+	// Load object
+	operand loadOp = vp.load(lookupResult.get_type(), lookupResult);
+	// Check if object is local, do a getelementptr if not
+	bool isLocal = false;
+	for (int i = 1; i < env->localSymbolVec.size(); i++) {
+		if (string(env->localSymbolVec.at(i)->get_string()) == string(name->get_string())) {
+			isLocal = true;
+			break;
+		}
+	}
+
+	if (!isLocal) {
+		int_value zeroOp(0), oneOp(1);
+		operand nameLookupOp = *(env->lookup(name));
+		op_type nameLookupType(nameLookupOp.get_type());
+		operand getElementPtrResult = vp.getelementptr(loadOp.get_type(), loadOp, zeroOp, oneOp, nameLookupType);
+		env->add_local(SELF_TYPE, getElementPtrResult);
+	} else {
+		env->add_local(SELF_TYPE, lookupResult);
+	}
+	/*
 	op_type resultType = lookupResult.get_type().get_deref_type();
 	operand finalResult(resultType, env->new_name());
 	vp.load(*(env->cur_stream), resultType, lookupResult, finalResult);
-	return finalResult;
+	*/
+	return loadOp;
 }
 
 operand no_expr_class::code(CgenEnvironment *env) 
