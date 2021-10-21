@@ -1,0 +1,41 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: clang++ build active file",
+			"command": "/opt/homebrew/opt/llvm@12/bin/clang++",
+			"args": [
+				"-o",
+				"cgen-2",
+				"-g",
+				"-L/opt/homebrew/opt/llvm@12/lib",
+				"cgen-2.o",
+				"stringtab.o",
+				"str_aux.o",
+				"operand.o",
+				"value_printer.o",
+				"handle_flags.o",
+				"utilities.o",
+				"dumptype.o",
+				"cgen_supp.o",
+				"cool-tree.o",
+				"tree.o",
+				"cgen-phase.o",
+				"ast-lex.o",
+				"ast-parse.o"
+			],
+			"options": {
+				"cwd": "${fileDirname}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: /opt/homebrew/opt/llvm@12/bin/clang++"
+		}
+	]
+}

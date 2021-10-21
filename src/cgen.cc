@@ -1167,32 +1167,66 @@ void CgenNode::handle_inheritance()
 			op_type intType(INT32);
 			op_type selfType(string(name->get_string()), 1);
 			vector<op_type> IOArgs;
+			vector<op_type> vtableInheritedTypes;
+
+			// SELF_TYPE methods
+			// IO_out_string
+			IOArgs.push_back(selfType);
+			IOArgs.push_back(stringType);
+			op_func_type IOOutStringPtr(selfType, IOArgs);
+			this->vtableTypes.push_back(IOOutStringPtr);
+			IOArgs.clear();
+
+			// IO_out_int
+			IOArgs.push_back(selfType);
+			IOArgs.push_back(intType);
+			op_func_type IOOutIntPtr(selfType, IOArgs);
+			this->vtableTypes.push_back(IOOutIntPtr);
+			IOArgs.clear();
+
+			// IO_in_string
+			IOArgs.push_back(selfType);
+			op_func_type IOInStringPtr(stringType, IOArgs);
+			this->vtableTypes.push_back(IOInStringPtr);
+			IOArgs.clear();
+
+			// IO_in_int
+			IOArgs.push_back(selfType);
+			op_func_type IOInIntPtr(intType, IOArgs);
+			this->vtableTypes.push_back(IOInIntPtr);
+			IOArgs.clear(); 
+
+			// Generate vtable func names for IO functions
+			this->vtableFuncNames.push_back("out_string");
+			this->vtableFuncNames.push_back("out_int");
+			this->vtableFuncNames.push_back("in_string");
+			this->vtableFuncNames.push_back("in_int");
 
 			// Generate vtable types for inherited IO functions
 			// IO_out_string
 			IOArgs.push_back(selfType);
 			IOArgs.push_back(stringType);
 			op_func_type inheritedOutStringPtr(selfType, IOArgs);
-			this->vtableTypes.push_back(inheritedOutStringPtr);
+			vtableInheritedTypes.push_back(inheritedOutStringPtr);
 			IOArgs.clear();
 
 			// IO_out_int
 			IOArgs.push_back(selfType);
 			IOArgs.push_back(intType);
 			op_func_type inheritedOutIntPtr(selfType, IOArgs);
-			this->vtableTypes.push_back(inheritedOutIntPtr);
+			vtableInheritedTypes.push_back(inheritedOutIntPtr);
 			IOArgs.clear();
 
 			// IO_in_string
 			IOArgs.push_back(selfType);
 			op_func_type inheritedInStringPtr(stringType, IOArgs);
-			this->vtableTypes.push_back(inheritedInStringPtr);
+			vtableInheritedTypes.push_back(inheritedInStringPtr);
 			IOArgs.clear();
 
 			// IO_in_int
 			IOArgs.push_back(selfType);
 			op_func_type inheritedInIntPtr(intType, IOArgs);
-			this->vtableTypes.push_back(inheritedInIntPtr);
+			vtableInheritedTypes.push_back(inheritedInIntPtr);
 			IOArgs.clear();
 
 			// Generate vtable values for inherited IO functions
@@ -1200,25 +1234,21 @@ void CgenNode::handle_inheritance()
 			string inheritedOutStringName = "bitcast (%IO* (%IO*,%String*) * @IO_out_string to " + selfType.get_name() + " (" + selfType.get_name() + ",%String*) *)";
 			const_value inheritedOutStringValue(nameType, inheritedOutStringName, false);
 			this->vtableValues.push_back(inheritedOutStringValue);
-			this->vtableFuncNames.push_back(simplify_name(inheritedOutStringValue.get_name()));
 
 			// IO_out_int
 			string inheritedOutIntName = "bitcast (%IO* (%IO*,i32) * @IO_out_int to " + selfType.get_name() + " (" + selfType.get_name() + ",i32) *)";
 			const_value inheritedOutIntValue(nameType, inheritedOutIntName, false);
 			this->vtableValues.push_back(inheritedOutIntValue);
-			this->vtableFuncNames.push_back(simplify_name(inheritedOutIntValue.get_name()));
 
 			// IO_in_string
 			string inheritedInStringName = "bitcast (%String* (%IO*) * @IO_in_string to %String* (" + selfType.get_name() + ") *)";
 			const_value inheritedInStringValue(nameType, inheritedInStringName, false);
 			this->vtableValues.push_back(inheritedInStringValue);
-			this->vtableFuncNames.push_back(simplify_name(inheritedInStringValue.get_name()));
 
 			// IO_in_int
 			string inheritedInIntName = "bitcast (i32 (%IO*) * @IO_in_int to i32 (" + selfType.get_name() + ") *)";
 			const_value inheritedInIntValue(nameType, inheritedInIntName, false);
 			this->vtableValues.push_back(inheritedInIntValue);
-			this->vtableFuncNames.push_back(simplify_name(inheritedInIntValue.get_name()));
 
 		}
 	} else {
@@ -1331,15 +1361,15 @@ void CgenNode::code_class()
 	vp.begin_block("entry");
 
 	// Generate code body for class_new
-	op_type classVtableType(this->get_type_name() + "_vtable*");
+	op_type classVtableType(this->get_type_name() + "_vtable", 1);
 	op_type intType(INT32);
 	op_type ptrType(INT8_PTR);
 	op_type intPtrType(INT32_PTR);
 	int_value zeroOp(0), oneOp(1);
 	global_value classVtableValue(classVtableType, this->get_type_name() + "_vtable_prototype");
 
-	operand classVtableGetElementPtr = vp.getelementptr(classVtableType, classVtableValue, zeroOp, oneOp, intPtrType);
-	operand classLoadOp = vp.load(intPtrType, classVtableGetElementPtr);
+	operand classVtableGetElementPtr = vp.getelementptr(classVtableType.get_deref_type(), classVtableValue, zeroOp, oneOp, intPtrType);
+	operand classLoadOp = vp.load(intPtrType.get_deref_type(), classVtableGetElementPtr);
 
 	// Call malloc
 	vector<op_type> mallocArgsTypes;
@@ -1355,7 +1385,7 @@ void CgenNode::code_class()
 
 	// Call getelementptr
 	op_type getElementPtrReturnType(this->get_type_name() + "_vtable**");
-	operand* getElementPtrReturnOp = new operand(vp.getelementptr(classNewType, bitcastOp, zeroOp, zeroOp, getElementPtrReturnType));
+	operand* getElementPtrReturnOp = new operand(vp.getelementptr(classNewType.get_deref_type(), bitcastOp, zeroOp, zeroOp, getElementPtrReturnType));
 
 	// Call store
 	vp.store(classVtableValue, *getElementPtrReturnOp);
@@ -1904,7 +1934,7 @@ operand object_class::code(CgenEnvironment *env)
 	operand loadOp = vp.load(lookupResult->get_type().get_deref_type(), *lookupResult);
 	// Check if object is local, do a getelementptr if not
 	bool isLocal = false;
-	for (int i = 1; i < env->localSymbolVec.size(); i++) {
+	for (int i = 0; i < env->localSymbolVec.size(); i++) {
 		if (string(env->localSymbolVec.at(i)->get_string()) == string(name->get_string())) {
 			isLocal = true;
 			break;
@@ -1915,7 +1945,9 @@ operand object_class::code(CgenEnvironment *env)
 		int_value zeroOp(0), oneOp(1);
 		operand* nameLookupOp = env->lookup(name);
 		op_type nameLookupType(nameLookupOp->get_type());
-		operand* getElementPtrResult = new operand(vp.getelementptr(loadOp.get_type().get_deref_type(), loadOp, zeroOp, oneOp, nameLookupType));
+		operand tempResult = vp.getelementptr(loadOp.get_type().get_deref_type(), loadOp, zeroOp, oneOp, nameLookupType);
+		operand* getElementPtrResult = new operand(tempResult.get_type(), tempResult.get_name().substr(1));
+		if (cgen_debug) std::cerr << "getElementPtrResult name: " << getElementPtrResult->get_name() << endl;
 		env->add_local(SELF_TYPE, *getElementPtrResult);
 	} else {
 		env->add_local(SELF_TYPE, *lookupResult);
@@ -1975,25 +2007,27 @@ operand dispatch_class::code(CgenEnvironment *env)
 #else
 	ValuePrinter vp(*(env->cur_stream));
 	op_type dispatchType;
+	operand secondLoadOp;
 	vector<operand> dispatchArgs;
 	int i = actual->first();
 	// Loop over dispatch args and load them
 	while (actual->more(i)) {
-		//actual->nth(i)->code(env);
+		actual->nth(i)->code(env);
 		dispatchType = env->get_class()->get_ret_type(actual->nth(i)->get_type()->get_string(), false);
 		if (cgen_debug) std::cerr << env->get_class()->get_ret_type(actual->nth(i)->get_type()->get_string(), false).get_name() << endl;
 		operand* lookupOp = env->lookup(expr->get_type());
-		//if (cgen_debug) std::cerr << "typename: " << lookupOp->get_typename() << endl;
-		operand dispatchArg(dispatchType.get_ptr_type(), lookupOp->get_name().substr(1, lookupOp->get_name().length() - 1));
-		operand loadOp = vp.load(dispatchType, dispatchArg);
-		actual->nth(i)->code(env);
+		if (cgen_debug) std::cerr << "typename: " << lookupOp->get_name() << endl;
+		operand dispatchArg(dispatchType.get_ptr_type(), lookupOp->get_name().substr(1));
+		secondLoadOp = vp.load(dispatchType, dispatchArg);
+		//actual->nth(i)->code(env);
 		i = actual->next(i);
 	}
 
 	// Do second load
 	operand* secondLookupOp = env->lookup(expr->get_type());
-	operand dispatchArg(dispatchType.get_ptr_type(), secondLookupOp->get_name().substr(1, secondLookupOp->get_name().length() - 1));
-	operand secondLoadOp = vp.load(dispatchType, dispatchArg);
+	op_type dispatchArgType(env->get_class()->get_type_name(), 1);
+	operand dispatchArg(dispatchType.get_ptr_type(), env->get_class()->get_type_name());
+	//operand secondLoadOp = vp.load(dispatchArgType, dispatchArg);
 
 	// Generate code for dispatch expression and save it
 	operand expressionOp = expr->code(env);
@@ -2019,11 +2053,11 @@ operand dispatch_class::code(CgenEnvironment *env)
 	string vtableName = env->get_class()->get_type_name() + "_vtable**";
 	op_type vtableType(vtableName);
 	vtableType.set_id(OBJ_PPTR);
-	operand getElementPtrVtable = vp.getelementptr(expressionOp.get_type(), zeroOp, zeroOp, vtableType);
+	operand getElementPtrVtable = vp.getelementptr(expressionOp.get_type().get_deref_type(), expressionOp, zeroOp, zeroOp, vtableType);
 	//if (cgen_debug) std::cerr << "here" << endl;
 
 	// Load vtable
-	operand vtableLoadOp = vp.load(vtableType, getElementPtrVtable);
+	operand vtableLoadOp = vp.load(vtableType.get_deref_type(), getElementPtrVtable);
 
 	// Generate getelementptr for specific function
 	// Find function in vtable and load it
@@ -2035,7 +2069,7 @@ operand dispatch_class::code(CgenEnvironment *env)
 	for (int i = 0; i < env->get_class()->vtableFuncNames.size(); i++) {
 		if (string(env->get_class()->vtableFuncNames.at(i)) == string(name->get_string())) {
 			int_value offsetValue(i);
-			foundOp = vp.getelementptr(vtableLoadOp.get_type(), vtableLoadOp, zeroOp, offsetValue, vtableType);
+			foundOp = vp.getelementptr(vtableLoadOp.get_type().get_deref_type(), vtableLoadOp, zeroOp, offsetValue, vtableType);
 			functionPtrType = op_type(env->get_class()->vtableTypes.at(i).get_name().substr(1), 1);
 			functionType = new op_type(env->get_class()->vtableTypes.at(i).get_name());
 			functionPtrType.set_id(OBJ_PPTR);
@@ -2044,7 +2078,7 @@ operand dispatch_class::code(CgenEnvironment *env)
 		}
 	}
 
-	operand finalLoadOp = vp.load(loadFunctionOp->get_type(), *loadFunctionOp);
+	operand finalLoadOp = vp.load(loadFunctionOp->get_type().get_deref_type(), *loadFunctionOp);
 
 	// Call the loaded function
 	op_type classType(env->get_class()->get_type_name(), 1);
@@ -2193,7 +2227,7 @@ void attr_class::code(CgenEnvironment *env)
 	op_type attrType(env->get_class()->get_type_name(), 1);
 
 	operand attrOp(attrType, env->bitcastResult.get_name().substr(1, env->bitcastResult.get_name().length()-1));
-	operand attrReturnOp = vp.getelementptr(attrType, attrOp, zeroOp, oneOp, initResultType);
+	operand attrReturnOp = vp.getelementptr(attrType.get_deref_type(), attrOp, zeroOp, oneOp, initResultType);
 	vp.store(*(env->cur_stream), *initResult, attrReturnOp);
 
 #endif
