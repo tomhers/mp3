@@ -1642,15 +1642,15 @@ operand assign_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "assign" << endl;
 	ValuePrinter vp(*(env->cur_stream));
 	// Find correct operand from var_table
-	operand assignResult = *(env->lookup(name));
+	operand assignResult = *(env->lookup(self));
 	// Evaluate expression
 	operand exprResult = expr->code(env);
 	// Load operand
-	operand loadOp = vp.load(assignResult.get_type(), assignResult);
+	operand loadOp = vp.load(assignResult.get_type().get_deref_type(), assignResult);
 	// Generate a getelementptr for loaded operand
 	int_value zeroOp(0), oneOp(1);
 	op_type exprPtrType(exprResult.get_type().get_ptr_type());
-	operand getElementPtrOp = vp.getelementptr(loadOp.get_type(), loadOp, zeroOp, oneOp, exprPtrType);
+	operand getElementPtrOp = vp.getelementptr(loadOp.get_type().get_deref_type(), loadOp, zeroOp, oneOp, exprPtrType);
 	// Store result
 	vp.store(*(env->cur_stream), exprResult, getElementPtrOp);
 	// Return result
@@ -1895,13 +1895,13 @@ operand object_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "Object" << endl;
 	ValuePrinter vp(*(env->cur_stream));
 	// Find object in lookup table
-	operand lookupResult = *(env->lookup(name));
-	if (string(lookupResult.get_name()) == "%empty") {
-		lookupResult = *(env->lookup(self));
+	operand* lookupResult = env->lookup(name);
+	if (string(lookupResult->get_name()) == "%empty") {
+		lookupResult = env->lookup(self);
 	}
 
 	// Load object
-	operand loadOp = vp.load(lookupResult.get_type(), lookupResult);
+	operand loadOp = vp.load(lookupResult->get_type().get_deref_type(), *lookupResult);
 	// Check if object is local, do a getelementptr if not
 	bool isLocal = false;
 	for (int i = 1; i < env->localSymbolVec.size(); i++) {
@@ -1913,12 +1913,12 @@ operand object_class::code(CgenEnvironment *env)
 
 	if (!isLocal) {
 		int_value zeroOp(0), oneOp(1);
-		operand nameLookupOp = *(env->lookup(name));
-		op_type nameLookupType(nameLookupOp.get_type());
-		operand getElementPtrResult = vp.getelementptr(loadOp.get_type(), loadOp, zeroOp, oneOp, nameLookupType);
-		env->add_local(SELF_TYPE, getElementPtrResult);
+		operand* nameLookupOp = env->lookup(name);
+		op_type nameLookupType(nameLookupOp->get_type());
+		operand* getElementPtrResult = new operand(vp.getelementptr(loadOp.get_type().get_deref_type(), loadOp, zeroOp, oneOp, nameLookupType));
+		env->add_local(SELF_TYPE, *getElementPtrResult);
 	} else {
-		env->add_local(SELF_TYPE, lookupResult);
+		env->add_local(SELF_TYPE, *lookupResult);
 	}
 	/*
 	op_type resultType = lookupResult.get_type().get_deref_type();
@@ -1976,19 +1976,24 @@ operand dispatch_class::code(CgenEnvironment *env)
 	ValuePrinter vp(*(env->cur_stream));
 	op_type dispatchType;
 	vector<operand> dispatchArgs;
+	int i = actual->first();
 	// Loop over dispatch args and load them
-	for (int i = actual->first(); actual->more(i); i = actual->next(i)) {
+	while (actual->more(i)) {
+		//actual->nth(i)->code(env);
 		dispatchType = env->get_class()->get_ret_type(actual->nth(i)->get_type()->get_string(), false);
-		operand lookupOp = *(env->lookup(expr->get_type()));
-		operand dispatchArg(dispatchType.get_ptr_type(), lookupOp.get_name().substr(1, lookupOp.get_name().length() - 1));
-		operand loadOp = vp.load(dispatchType.get_ptr_type(), dispatchArg);
+		if (cgen_debug) std::cerr << env->get_class()->get_ret_type(actual->nth(i)->get_type()->get_string(), false).get_name() << endl;
+		operand* lookupOp = env->lookup(expr->get_type());
+		//if (cgen_debug) std::cerr << "typename: " << lookupOp->get_typename() << endl;
+		operand dispatchArg(dispatchType.get_ptr_type(), lookupOp->get_name().substr(1, lookupOp->get_name().length() - 1));
+		operand loadOp = vp.load(dispatchType, dispatchArg);
 		actual->nth(i)->code(env);
+		i = actual->next(i);
 	}
 
 	// Do second load
-	operand secondLookupOp = *(env->lookup(expr->get_type()));
-	operand dispatchArg(dispatchType.get_ptr_type(), secondLookupOp.get_name().substr(1, secondLookupOp.get_name().length() - 1));
-	operand secondLoadOp = vp.load(dispatchType.get_ptr_type(), dispatchArg);
+	operand* secondLookupOp = env->lookup(expr->get_type());
+	operand dispatchArg(dispatchType.get_ptr_type(), secondLookupOp->get_name().substr(1, secondLookupOp->get_name().length() - 1));
+	operand secondLoadOp = vp.load(dispatchType, dispatchArg);
 
 	// Generate code for dispatch expression and save it
 	operand expressionOp = expr->code(env);
@@ -2015,6 +2020,7 @@ operand dispatch_class::code(CgenEnvironment *env)
 	op_type vtableType(vtableName);
 	vtableType.set_id(OBJ_PPTR);
 	operand getElementPtrVtable = vp.getelementptr(expressionOp.get_type(), zeroOp, zeroOp, vtableType);
+	//if (cgen_debug) std::cerr << "here" << endl;
 
 	// Load vtable
 	operand vtableLoadOp = vp.load(vtableType, getElementPtrVtable);
@@ -2048,7 +2054,8 @@ operand dispatch_class::code(CgenEnvironment *env)
 	return callOp;
 	
 #endif
-	return operand();
+	operand noOp;
+	return noOp;
 }
 
 operand typcase_class::code(CgenEnvironment *env)
@@ -2179,9 +2186,9 @@ void attr_class::code(CgenEnvironment *env)
 	op_type intPtrType(INT32_PTR);
 	int_value zeroOp(0), oneOp(1);
 	operand* initResult = new operand(init->code(env));
-	operand lookupResult = *(env->lookup(self));
+	operand* lookupResult = env->lookup(self);
 
-	operand lookupOp(intPtrType, lookupResult.get_name());
+	operand lookupOp(intPtrType, lookupResult->get_name());
 	op_type initResultType(initResult->get_type().get_ptr_type());
 	op_type attrType(env->get_class()->get_type_name(), 1);
 

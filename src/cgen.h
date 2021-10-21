@@ -13,7 +13,7 @@
 
 // ----------------------------- END DESIGN DOCS --------------------------- //
 
-#include "cool-tree.h"
+#include "../cool-support/include/cool-tree.h"
 #include "symtab.h"
 #include "value_printer.h"
 
