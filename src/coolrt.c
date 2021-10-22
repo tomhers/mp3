@@ -17,9 +17,21 @@ const char IO_string[] 		= "IO";
 
 const char default_string[]	= "";
 
+//extern const Object_vtable Object_vtable_prototype;
+extern const IO_vtable IO_vtable_prototype;
+extern const String_vtable String_vtable_prototype;
+extern const Int_vtable Int_vtable_prototype;
+extern const Bool_vtable Bool_vtable_prototype;
+
 /* Class vtable prototypes */
 const Object_vtable Object_vtable_prototype = {
-	/* ADD CODE HERE */
+	.level = 0,
+	.ptrtoint = 0,
+	.name = (char*)Object_string,
+	.Object_new = Object_new,
+	.Object_abort = (Object* (*) (Object*)) Object_abort,
+	.Object_type_name = (const String* (*) (Object*)) Object_type_name,
+	.Object_copy = (Object* (*) (Object*)) Object_copy
 };
 
 /* ADD CODE HERE FOR MORE VTABLE PROTOTYPES */

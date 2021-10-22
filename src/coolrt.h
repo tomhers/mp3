@@ -25,17 +25,17 @@ struct Object {
 
 struct Int {
 	Int_vtable* vtblptr;
-	int val = 0;
+	int val;
 };
 
 struct Bool {
 	Bool_vtable* vtblptr;
-	bool val = false;
+	bool val;
 };
 
 struct String {
 	String_vtable* vtblptr;
-	char* val = "";
+	char* val;
 };
 
 struct IO {
@@ -46,6 +46,7 @@ struct IO {
 /* vtable type definitions */
 struct Object_vtable {
 	int level;
+	int ptrtoint;
 	char* name;
 	Object* (*Object_new)(void);
 	Object* (*Object_abort)(Object*);
@@ -55,6 +56,7 @@ struct Object_vtable {
 
 struct IO_vtable {
 	int level;
+	int ptrtoint;
 	char* name;
 	IO* (*IO_new)(void);
 	void (*IO_init)(IO*);
@@ -71,6 +73,7 @@ struct IO_vtable {
 
 struct Int_vtable {
 	int level;
+	int ptrtoint;
 	char* name;
 	Int* (*Int_new)(void);
 
@@ -81,6 +84,7 @@ struct Int_vtable {
 
 struct Bool_vtable {
 	int level;
+	int ptrtoint;
 	char* name;
 	Bool* (*Bool_new)(void);
 
@@ -91,6 +95,7 @@ struct Bool_vtable {
    
 struct String_vtable {
 	int level;
+	int ptrtoint;
 	char* name;
 	String* (*String_new)(void);
 	Int* (*String_length)(String*);
