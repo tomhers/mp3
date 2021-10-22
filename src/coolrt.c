@@ -18,10 +18,10 @@ const char IO_string[] 		= "IO";
 const char default_string[]	= "";
 
 //extern const Object_vtable Object_vtable_prototype;
-extern const IO_vtable IO_vtable_prototype;
-extern const String_vtable String_vtable_prototype;
-extern const Int_vtable Int_vtable_prototype;
-extern const Bool_vtable Bool_vtable_prototype;
+//extern const IO_vtable IO_vtable_prototype;
+//extern const String_vtable String_vtable_prototype;
+//extern const Int_vtable Int_vtable_prototype;
+//extern const Bool_vtable Bool_vtable_prototype;
 
 /* Class vtable prototypes */
 const Object_vtable Object_vtable_prototype = {
@@ -34,7 +34,52 @@ const Object_vtable Object_vtable_prototype = {
 	.Object_copy = (Object* (*) (Object*)) Object_copy
 };
 
-/* ADD CODE HERE FOR MORE VTABLE PROTOTYPES */
+const Int_vtable Int_vtable_prototype = {
+    .level = 1,
+    .ptrtoint = 0,
+    .name = (char*)Int_string,
+    .Int_new = Int_new,
+    .Object_abort = (Object* (*) (Int*)) Object_abort,
+    .Object_type_name = (const String* (*) (Int*)) Object_type_name,
+    .Object_copy = (Int* (*) (Int*)) Object_copy
+};
+
+const Bool_vtable Bool_vtable_prototype = {
+    .level = 2,
+    .ptrtoint = 0,
+    .name = (char*)Bool_string,
+    .Bool_new = Bool_new,
+    .Object_abort = (Object* (*) (Bool*)) Object_abort,
+    .Object_type_name = (const String* (*) (Bool*)) Object_type_name,
+    .Object_copy = (Bool* (*) (Bool*)) Object_copy
+};
+
+const String_vtable String_vtable_prototype = {
+    .level = 3,
+    .ptrtoint = 0, 
+    .name = (char*)String_string,
+    .String_new = String_new,
+    .Object_abort = (Object* (*) (String*)) Object_abort,
+    .Object_type_name = (const String* (*) (String*)) Object_type_name,
+    .Object_copy = (String* (*) (String*)) Object_copy,
+    .String_length = String_length,
+    .String_concat = String_concat,
+    .String_substr = String_substr
+};
+
+const IO_vtable IO_vtable_prototype = {
+    .level = 4,
+    .ptrtoint = 0,
+    .name = (char*)IO_string,
+    .IO_new = IO_new,
+    .Object_abort = (Object* (*) (IO*)) Object_abort,
+    .Object_type_name = (const String* (*) (IO*)) Object_type_name,
+    .Object_copy = (IO* (*) (IO*)) Object_copy,
+    .IO_out_string = IO_out_string,
+    .IO_out_int = IO_out_int,
+    .IO_in_string = IO_in_string,
+    .IO_in_int= IO_in_int
+};
 
 
 /*
