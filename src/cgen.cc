@@ -1391,7 +1391,7 @@ void CgenNode::code_class()
 	vp.store(classVtableValue, *getElementPtrReturnOp);
 
 	// Allocate memory for result
-	operand* allocaOp = new operand(vp.alloca_mem(classNewType.get_deref_type().get_deref_type()));
+	operand* allocaOp = new operand(vp.alloca_mem(classNewType));
 
 	// Store bitcast result and save as local variable
 	vp.store(bitcastOp, *allocaOp);
@@ -1947,8 +1947,17 @@ operand object_class::code(CgenEnvironment *env)
 		int_value zeroOp(0), oneOp(1);
 		operand* nameLookupOp = env->lookup(name);
 		op_type nameLookupType(nameLookupOp->get_type());
+		operand tempResult;
+		if (cgen_debug) std::cerr << "class name: " << "%" + env->get_class()->get_type_name() + "*" << endl;
+		if (string("%" + env->get_class()->get_type_name() + "*").compare(loadOp.get_type().get_name()) == 0) {
+			if (cgen_debug) std::cerr << "getElementPtr type: " << loadOp.get_type().get_deref_type().get_name() << endl;
+			tempResult = vp.getelementptr(loadOp.get_type().get_deref_type(), loadOp, zeroOp, oneOp, nameLookupType);
+		} else {
+			tempResult = vp.getelementptr(loadOp.get_type(), loadOp, zeroOp, oneOp, nameLookupType);
+		}
 		if (cgen_debug) std::cerr << "get_type: " << loadOp.get_type().get_name() << endl;
-		operand tempResult = vp.getelementptr(loadOp.get_type(), loadOp, zeroOp, oneOp, nameLookupType);
+		if (cgen_debug) std::cerr << "name: " << name->get_string() << endl;
+		//operand tempResult = vp.getelementptr(loadOp.get_type(), loadOp, zeroOp, oneOp, nameLookupType);
 		operand* getElementPtrResult = new operand(tempResult.get_type(), tempResult.get_name().substr(1));
 		if (cgen_debug) std::cerr << "getElementPtrResult name: " << getElementPtrResult->get_name() << endl;
 		env->add_local(SELF_TYPE, *getElementPtrResult);
@@ -2102,8 +2111,57 @@ operand typcase_class::code(CgenEnvironment *env)
 #ifndef MP3
 	assert(0 && "Unsupported case for phase 1");
 #else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+	ValuePrinter vp(*(env->cur_stream));
+	CgenClassTable* ct = env->get_class()->get_classtable();
+
+	// Generate labels
+	string headerLabel = env->new_label("case.hdr.", false);
+	string exitLabel = env->new_label("case.exit.", true);
+
+	operand codeOp = expr->code(env);
+	op_type joinType = env->type_to_class(expr->get_type())->get_type_name();
+	CgenNode* cls = env->type_to_class(expr->get_type());
+
+	// Handle void case
+	if (codeOp.get_typename() != "%Int*" && codeOp.get_typename() != "%Bool*") {
+		op_type boolType(INT1), emptyType;
+		null_value nullValue(codeOp.get_type());
+		operand icmpOp = vp.icmp(EQ, codeOp, nullValue);
+		string okLabel = env->new_ok_label();
+		vp.branch_cond(icmpOp, "abort", okLabel);
+	}
+
+	vp.branch_uncond(headerLabel);
+	operand tagOp = get_class_tag(codeOp, cls, env);
+	branch_class* b = (branch_class*)cases->nth(cases->first());
+	string caseResultTypeName = b->get_expr()->get_type()->get_string();
+	if (caseResultTypeName == "SELF_TYPE") {
+		caseResultTypeName = env->get_class()->get_type_name();
+	}
+
+	op_type allocaType(caseResultTypeName, 1);
+	operand allocaOp = vp.alloca_mem(allocaType);
+	env->branch_operand = allocaOp;
+
+	// Loop over cases and save results
+	vector<operand> values;
+	for (int i = ct->get_num_classes() - 1; i >= 0; i--) {
+		for (int j = cases->first(); cases->more(j); j = cases->next(j)) {
+			if (i == ct->lookup(cases->nth(j)->get_type_decl())->get_tag()) {
+				string caseLabel = env->new_label("case." + itos(i) + ".", false);
+				vp.branch_uncond(caseLabel);
+				operand caseValue = cases->nth(j)->code(codeOp, tagOp, joinType, env);
+				values.push_back(caseValue);
+			}
+		}
+	}
+
+	// Generate code for abort
+	env->new_label("", true);
+	vp.branch_uncond("abort");
+	operand loadOp = vp.load(allocaType.get_ptr_type(), allocaOp);
+	return loadOp;
+	
 #endif
 	return operand();
 }
@@ -2191,8 +2249,51 @@ operand branch_class::code(operand expr_val, operand tag,
 #ifndef MP3
 	assert(0 && "Unsupported case for phase 1");
 #else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+	ValuePrinter vp(*(env->cur_stream));
+	CgenNode* cls = env->get_class()->get_classtable()->lookup(type_decl);
+
+	int myTag = cls->get_tag();
+	// Generate labels for branching
+	string gteLabel = env->new_label("src_gte_br." + itos(myTag) + ".", false);
+	string lteLabel = env->new_label("src_lte_mc." + itos(myTag) + ".", false);
+	string exitLabel = env->new_label("br_exit." + itos(myTag) + ".", true);
+
+	// Generate icmp comparing source tag to class tag
+	op_type boolType(INT1);
+	op_type intType(INT32);
+	int_value myTagValue(myTag);
+	op_type tagType(tag.get_type());
+	tag.set_type(intType);
+	operand icmpOp = vp.icmp(LT, tag, myTagValue);
+	vp.branch_cond(icmpOp, exitLabel, gteLabel);
+
+	// Compare source tag to max child
+	int maxChild = cls->get_max_child();
+	int_value maxChildValue(maxChild);
+	operand secondIcmpOp = vp.icmp(GT, tag, maxChildValue);
+	vp.branch_cond(secondIcmpOp, exitLabel, lteLabel);
+	tag.set_type(tagType);
+
+	// Handle arbitrary casts to Int or Bool
+	if (cls->get_type_name() == "Int" || cls->get_type_name() == "Bool") {
+		expr_val = conform(expr_val, op_type(cls->get_type_name(), 1), env);
+	}
+	op_type allocaType(cls->get_type_name(), 1);
+	operand* allocaOp = new operand(vp.alloca_mem(allocaType));
+	operand conformOp = conform(expr_val, allocaType, env);
+	vp.store(conformOp, *allocaOp);
+
+	operand secondConformOp = conform(expr->code(env), join_type.get_ptr_type(), env);
+	operand thirdConformOp = conform(secondConformOp, env->branch_operand.get_type(), env);
+
+	env->branch_operand.set_type(env->branch_operand.get_type().get_ptr_type());
+	vp.store(thirdConformOp, env->branch_operand);
+	env->branch_operand.set_type(env->branch_operand.get_type().get_deref_type());
+
+	env->kill_local();
+	vp.branch_uncond(env->next_label);
+	return thirdConformOp;
+
 #endif
 	return operand();
 }
