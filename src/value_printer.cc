@@ -2,12 +2,12 @@
 #include "cool-io.h"     // for cerr, <<, manipulators
 #include <sstream>
 
-static int value_printer_counter = -1;
+static int value_printer_counter = 0;
 static void embed_getelementptr (ostream &o, op_type type, operand op1, operand op2, operand op3);
 
 operand make_fresh_operand(op_type type) {
 	stringstream out;
-	out << "vtpm." << (value_printer_counter++);
+	out << "tmp." << (value_printer_counter++);
 	string name = out.str();
  	return operand(type, name);
 }

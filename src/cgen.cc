@@ -1391,11 +1391,12 @@ void CgenNode::code_class()
 	vp.store(classVtableValue, *getElementPtrReturnOp);
 
 	// Allocate memory for result
-	operand* allocaOp = new operand(vp.alloca_mem(classNewType));
+	operand* allocaOp = new operand(vp.alloca_mem(classNewType.get_deref_type().get_deref_type()));
 
 	// Store bitcast result and save as local variable
 	vp.store(bitcastOp, *allocaOp);
 	env->add_local(self, *allocaOp);
+	if (cgen_debug) std::cerr << "allocaOp type:" << allocaOp->get_type().get_name() << endl;
 
 	// Generate code for attributes
 	i = features->first();
@@ -1927,6 +1928,7 @@ operand object_class::code(CgenEnvironment *env)
 	// Find object in lookup table
 	operand* lookupResult = env->lookup(name);
 	if (string(lookupResult->get_name()) == "%empty") {
+		if (cgen_debug) std::cerr << "empty" << endl;
 		lookupResult = env->lookup(self);
 	}
 
@@ -1945,7 +1947,8 @@ operand object_class::code(CgenEnvironment *env)
 		int_value zeroOp(0), oneOp(1);
 		operand* nameLookupOp = env->lookup(name);
 		op_type nameLookupType(nameLookupOp->get_type());
-		operand tempResult = vp.getelementptr(loadOp.get_type().get_deref_type(), loadOp, zeroOp, oneOp, nameLookupType);
+		if (cgen_debug) std::cerr << "get_type: " << loadOp.get_type().get_name() << endl;
+		operand tempResult = vp.getelementptr(loadOp.get_type(), loadOp, zeroOp, oneOp, nameLookupType);
 		operand* getElementPtrResult = new operand(tempResult.get_type(), tempResult.get_name().substr(1));
 		if (cgen_debug) std::cerr << "getElementPtrResult name: " << getElementPtrResult->get_name() << endl;
 		env->add_local(SELF_TYPE, *getElementPtrResult);
@@ -2111,8 +2114,19 @@ operand new__class::code(CgenEnvironment *env)
 #ifndef MP3
 	assert(0 && "Unsupported case for phase 1");
 #else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+	ValuePrinter vp(*(env->cur_stream));
+	vector<operand> args;
+	vector<op_type> argsTypes;
+	operand noOp;
+	op_type noType;
+	op_type emptyType("empty");
+	argsTypes.push_back(noType);
+	args.push_back(noOp);
+
+	operand tempOp(emptyType, env->get_class()->get_type_name() + "*");
+	operand* finalOp = new operand(tempOp);
+	vp.call(*(env->cur_stream), argsTypes, env->get_class()->get_type_name() + "_new", false, args, *finalOp);
+	env->add_local(type_name, *finalOp);
 #endif
 	return operand();
 }
