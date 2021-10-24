@@ -1609,10 +1609,17 @@ void method_class::code(CgenEnvironment *env)
 	}
 	ValuePrinter vp(*(env->cur_stream));
 	op_type methodReturnType(get_method_type(return_type->get_string()));
+	if (cgen_debug) std::cerr << "return type: " << return_type->get_string() << endl;
+	if (string(return_type->get_string()).compare("SELF_TYPE") == 0) {
+		if (cgen_debug) std::cerr << "here" << endl;
+		methodReturnType = op_type("Object", 1);
+	}
 	op_type classType(env->get_class()->get_type_name(), 1);
 	operand selfOp(classType, "self");
 	vector<operand> methodArgs;
 	string methodName = env->get_class()->get_type_name() + "_" + string(name->get_string());
+	if (cgen_debug) std::cerr << "method name: " << methodName << endl;
+	if (cgen_debug) std::cerr << "class type: " << env->get_class()->get_type_name() << endl;
 	methodArgs.push_back(selfOp);
 	env->localSymbolVec.push_back(self);
 
@@ -1625,6 +1632,7 @@ void method_class::code(CgenEnvironment *env)
 	}
 
 	// Define method
+	if (cgen_debug) std::cerr << "method return type: " << methodReturnType.get_name() << endl;
 	vp.define(methodReturnType, methodName, methodArgs);
 
 	// Create entry block
