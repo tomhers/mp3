@@ -759,7 +759,7 @@ void CgenClassTable::code_main()
 	vp.call(*ct_stream, mainArgsTypes, "Main_new", true, mainArgs, mainOp);
 
 	// Call Main_main()
-	operand mainReturnOp(objectType, "main.retval");
+	operand mainReturnOp(mainType, "main.retval");
 	vector<operand> mainReturnArgs;
 	vector<op_type> mainReturnTypes;
 	mainReturnArgs.push_back(mainOp);
@@ -841,8 +841,6 @@ op_type CgenNode::get_ret_type(string s, bool isFormal)
 		return INT1;
 	} else if (s == "Int" || s == "int") {
 		return INT32;
-	} else if (s == "String") {
-		return INT8_PTR;
 	} else if (s == "SELF_TYPE") {
 		op_type result(this->get_type_name());
 		return result;
@@ -1538,7 +1536,9 @@ vector<op_type> CgenEnvironment::parse_args(string s) {
 	string temp1, temp2;
 	getline(ss, temp1, '(');
 	getline(ss, temp2, ')');
-	string args = s.substr(temp1.length() + 1, s.length() - 1 - (temp2.length() + 1));
+	if (cgen_debug) std::cerr << "temp2: " << temp2 << endl;
+	string args = temp2;
+	//string args = s.substr(temp1.length() + 1, s.length() - 1 - (temp2.length() + 1));
 	int offset = 0;
 	for (int i = 0; i < args.length();) {
 		if (args.at(i) == ' ') {
@@ -1612,7 +1612,7 @@ void method_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "return type: " << return_type->get_string() << endl;
 	if (string(return_type->get_string()).compare("SELF_TYPE") == 0) {
 		if (cgen_debug) std::cerr << "here" << endl;
-		methodReturnType = op_type("Object", 1);
+		methodReturnType = op_type(env->get_class()->get_type_name(), 1);
 	}
 	op_type classType(env->get_class()->get_type_name(), 1);
 	operand selfOp(classType, "self");
@@ -1655,6 +1655,8 @@ void method_class::code(CgenEnvironment *env)
 	// Generate body of method
 	operand methodResult = expr->code(env);
 	if (methodResult.get_type().get_name() != methodReturnType.get_name()) {
+		if (cgen_debug) std::cerr << "methodResult: " << methodResult.get_type().get_name() << endl;
+		if (cgen_debug) std::cerr << "methodReturnType: " << methodReturnType.get_name() << endl;
 		methodResult = vp.bitcast(methodResult, methodReturnType);
 	}
 
@@ -2013,8 +2015,19 @@ operand string_const_class::code(CgenEnvironment *env)
 #ifndef MP3
 	assert(0 && "Unsupported case for phase 1");
 #else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+	if (cgen_debug) std::cerr << "string token: " << token->get_string() << endl;
+	ValuePrinter vp(*(env->cur_stream));
+	CgenClassTable* ct = env->get_class()->get_classtable();
+	op_type stringType(INT8_PTR);
+	for (int i = stringtable.first(); stringtable.more(i); i = stringtable.next(i)) {
+		if (token->get_string() == stringtable.lookup(i)->get_string()) {
+			if (cgen_debug) std::cerr << "token found" << endl;
+			global_value* stringOp = new global_value(stringType, "String." + itos(i));
+			env->add_local(SELF_TYPE, *stringOp);
+		}
+	}
+	operand stringOp(stringType, "temp");
+	return stringOp;
 #endif
 	return operand();
 }
@@ -2037,8 +2050,13 @@ operand dispatch_class::code(CgenEnvironment *env)
 		if (cgen_debug) std::cerr << env->get_class()->get_ret_type(actual->nth(i)->get_type()->get_string(), false).get_name() << endl;
 		operand* lookupOp = env->lookup(expr->get_type());
 		if (cgen_debug) std::cerr << "typename: " << lookupOp->get_name() << endl;
-		operand dispatchArg(dispatchType.get_ptr_type(), lookupOp->get_name().substr(1));
-		secondLoadOp = vp.load(dispatchType, dispatchArg);
+		if (dispatchType.get_name() == "%String*") {
+			global_value tempOp(dispatchType, lookupOp->get_name().substr(1));
+			secondLoadOp = operand(tempOp);
+		} else {
+			operand dispatchArg(dispatchType.get_ptr_type(), lookupOp->get_name().substr(1));
+			secondLoadOp = vp.load(dispatchType, dispatchArg);
+		}
 		//actual->nth(i)->code(env);
 		i = actual->next(i);
 	}
@@ -2102,6 +2120,7 @@ operand dispatch_class::code(CgenEnvironment *env)
 
 	// Call the loaded function
 	op_type classType(env->get_class()->get_type_name(), 1);
+	if (cgen_debug) std::cerr << "functionType name: " << functionType->get_name() << endl;
 	vector<op_type> functionArgsTypes = env->parse_args(functionType->get_name());
 	operand callOp = vp.call(functionArgsTypes, classType, finalLoadOp.get_name().substr(1), false, dispatchArgs);
 
