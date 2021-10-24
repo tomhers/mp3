@@ -2251,10 +2251,11 @@ void method_class::layout_feature(CgenNode *cls)
 
 	if (!cls->check_basic(cls->get_type_name(), false)) {
 		// add feature to vtable
-		op_type featureType(cls->get_ret_type(return_type->get_string(), false));
+		op_type featureType(cls->get_ret_type(return_type->get_string(), false).get_ptr_type());
+		if (cgen_debug) std::cerr << "feature type: " << featureType.get_name() << endl;
 		op_func_type featureFuncPtr(featureType, formalTypeVec);
 		cls->myVtableTypes.push_back(featureFuncPtr);
-		cls->myVtableReturnTypes.push_back(return_type->get_string());
+		cls->myVtableReturnTypes.push_back(string(featureType.get_name()));
 
 		// add info for vtable prototype
 		std::string featureName = "@" + cls->get_type_name() + "_" + name->get_string();
