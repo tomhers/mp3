@@ -887,6 +887,22 @@ bool CgenNode::check_basic(string s, bool checkSelfType)
 	return false;
 }
 
+bool CgenNode::check_basic_type(string s, bool checkSelfType)
+{
+	if (s == "i1" ||
+		s == "i32" || 
+		s == "i8*" )
+	{
+		return true;
+	}
+
+	if (checkSelfType && s == "SELF_TYPE") {
+		return true;
+	}
+
+	return false;
+}
+
 op_type get_method_type(string s)
 {
 	if (s == "Bool" || s == "bool") {
@@ -1251,20 +1267,36 @@ void CgenNode::handle_inheritance()
 		}
 	} else {
 		// Generate vtable entries for inherited functions from non-basic parent
+		int offset = 0;
 		for (auto i = 0; i < this->get_parentnd()->myVtableTypes.size(); i++) {
 			op_type selfType(typeName, 1);
-			op_type returnType(this->get_parentnd()->myVtableReturnTypes.at(i), 1);
+			op_type returnType;
+			if (this->get_parentnd()->myVtableReturnTypes.at(i) == "i1") {
+				returnType = op_type(INT1);
+			} else if (this->get_parentnd()->myVtableReturnTypes.at(i) == "i32") {
+				returnType = op_type(INT32);
+			} else {
+				returnType = op_type(this->get_parentnd()->myVtableReturnTypes.at(i));
+			}
+			if (cgen_debug) std::cerr << "return type:" << returnType.get_name() << endl;
 			vector<op_type> inheritedArgs;
+			string inheritedArgsNames;
 
 			// Generate vtable type
 			inheritedArgs.push_back(selfType);
+			inheritedArgsNames += typeName;
+			for (int j = 0; j < this->get_parentnd()->numFormalOps.at(i); j++) {
+				inheritedArgs.push_back(this->get_parentnd()->formalOps.at(offset).get_type());
+				inheritedArgsNames += "," + this->get_parentnd()->formalOps.at(offset).get_type().get_name();
+				offset++;
+			}
 			op_func_type inheritedFuncPtr(returnType, inheritedArgs);
 			this->vtableTypes.push_back(inheritedFuncPtr);
 
 			// Generate vtable value
-			string inheritedValueName = "bitcast (%" + this->get_parentnd()->myVtableReturnTypes.at(i);
-			inheritedValueName += "* (%" + parentTypeName + "*) * " + this->get_parentnd()->myVtableValues.at(i).get_name();
-			inheritedValueName += " to %" + this->get_parentnd()->myVtableReturnTypes.at(i) + "* (%" + typeName + "*) *)";
+			string inheritedValueName = "bitcast (" + returnType.get_name();
+			inheritedValueName += " (%" + parentTypeName + "*) * " + this->get_parentnd()->myVtableValues.at(i).get_name();
+			inheritedValueName += " to " + returnType.get_name() + " (%" + inheritedArgsNames + "*) *)";
 			const_value inheritedValue(INT32, inheritedValueName, false);
 			this->vtableValues.push_back(inheritedValue);
 			this->vtableFuncNames.push_back(simplify_name(this->get_parentnd()->myVtableValues.at(i).get_name()));
@@ -1782,24 +1814,28 @@ operand let_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "let" << endl;
 	ValuePrinter vp(*(env->cur_stream));
 	// Check type to decide amount of memory to alloca
-	op_type initType(INT32);
-	if (string(type_decl->get_string()).compare("Bool") == 0) {
+	op_type initType(type_decl->get_string(), 1);
+	/*if (string(type_decl->get_string()).compare("Bool") == 0) {
 		initType = INT1;
-	}
+	}*/
 	// Get results of init expr if present
 	operand initResult = init->code(env);
-	operand localVar(initType.get_ptr_type(), env->new_name());
-	vp.alloca_mem(*(env->cur_stream), initType, localVar);
+	if (cgen_debug) std::cerr << "type_decl: " << type_decl->get_string() << endl;
+	operand localVar = vp.alloca_mem(initType);
+	//vp.alloca_mem(*(env->cur_stream), initType, localVar);
 	env->add_local(identifier, localVar);
 
 	// If no init expr, init to default vals
 	// Else, store init val in localVar
 	if (initResult.get_type().get_id() == EMPTY) {
+		initResult.set_type(initType);
+		/*if (cgen_debug) std::cerr << "empty case" << endl;
 		string defaultVal = "0";
 		if (initType.get_id() == INT1) {
 			defaultVal = "false";
 		}
-		vp.store(*(env->cur_stream), const_value(initType, defaultVal, true), localVar);
+		vp.store(*(env->cur_stream), const_value(initType, defaultVal, true), localVar);*/
+		vp.store(*(env->cur_stream), initResult, localVar);
 	} else {
 		vp.store(*(env->cur_stream), initResult, localVar);
 	}
@@ -2039,7 +2075,7 @@ operand dispatch_class::code(CgenEnvironment *env)
 	assert(0 && "Unsupported case for phase 1");
 #else
 	ValuePrinter vp(*(env->cur_stream));
-	op_type dispatchType;
+	op_type dispatchType(env->get_class()->get_type_name());
 	operand secondLoadOp;
 	vector<operand> dispatchArgs;
 	int i = actual->first();
@@ -2103,8 +2139,11 @@ operand dispatch_class::code(CgenEnvironment *env)
 	op_type functionPtrType;
 	operand* loadFunctionOp;
 	op_type* functionType;
+	if (cgen_debug) std::cerr << "looking for: " << string(name->get_string()) << endl;
+	if (cgen_debug) std::cerr << "vtableFuncNames size: " << env->get_class()->vtableFuncNames.size() << endl;
 
 	for (int i = 0; i < env->get_class()->vtableFuncNames.size(); i++) {
+		if (cgen_debug) std::cerr << "looking at: " << string(env->get_class()->vtableFuncNames.at(i)) << endl;
 		if (string(env->get_class()->vtableFuncNames.at(i)) == string(name->get_string())) {
 			int_value offsetValue(i);
 			foundOp = vp.getelementptr(vtableLoadOp.get_type().get_deref_type(), vtableLoadOp, zeroOp, offsetValue, vtableType);
@@ -2204,14 +2243,16 @@ operand new__class::code(CgenEnvironment *env)
 	vector<op_type> argsTypes;
 	operand noOp;
 	op_type noType;
-	op_type emptyType("empty");
-	argsTypes.push_back(noType);
+	op_type emptyType(string(type_name->get_string()), 1);
+	//argsTypes.push_back(noType);
 	args.push_back(noOp);
 
-	operand tempOp(emptyType, env->get_class()->get_type_name() + "*");
+	if (cgen_debug) std::cerr << "class name: " << type_name->get_string() << endl;
+	operand tempOp(emptyType, string(type_name->get_string()) + "*");
 	operand* finalOp = new operand(tempOp);
-	vp.call(*(env->cur_stream), argsTypes, env->get_class()->get_type_name() + "_new", false, args, *finalOp);
+	operand callOp = vp.call(argsTypes, emptyType, string(type_name->get_string()) + "_new", false, args);
 	env->add_local(type_name, *finalOp);
+	return callOp;
 #endif
 	return operand();
 }
@@ -2243,19 +2284,32 @@ void method_class::layout_feature(CgenNode *cls)
 	formalTypeVec.push_back(selfReturnType);
 
 	// Save info about method formals
+	int ct = 0;
 	for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
 		if (cgen_debug) std::cerr << formals->nth(i)->get_type_decl()->get_string() << endl;
-		op_type formalType(cls->get_ret_type(formals->nth(i)->get_type_decl()->get_string(), false));
+		op_type formalType(cls->get_ret_type(formals->nth(i)->get_type_decl()->get_string(), true));
 		formalTypeVec.push_back(formalType);
+		operand tempOp(formalType, formals->nth(i)->get_type_decl()->get_string());
+		cls->formalOps.push_back(tempOp);
+		ct++;
 	}
 
+	cls->numFormalOps.push_back(ct);
 	if (!cls->check_basic(cls->get_type_name(), false)) {
 		// add feature to vtable
-		op_type featureType(cls->get_ret_type(return_type->get_string(), false).get_ptr_type());
+		op_type featureType(cls->get_ret_type(return_type->get_string(), false));
+		if (cgen_debug) std::cerr << "class type: " << cls->get_type_name() << endl;
+		if (cls->get_type_name() == featureType.get_name().substr(1)) {
+			featureType.set_type(featureType.get_ptr_type());
+		}
 		if (cgen_debug) std::cerr << "feature type: " << featureType.get_name() << endl;
 		op_func_type featureFuncPtr(featureType, formalTypeVec);
 		cls->myVtableTypes.push_back(featureFuncPtr);
-		cls->myVtableReturnTypes.push_back(string(featureType.get_name()));
+		if (featureType.get_name().at(0) == '%') {
+			cls->myVtableReturnTypes.push_back(featureType.get_name().substr(1));
+		} else {
+			cls->myVtableReturnTypes.push_back(featureType.get_name());
+		}
 
 		// add info for vtable prototype
 		std::string featureName = "@" + cls->get_type_name() + "_" + name->get_string();

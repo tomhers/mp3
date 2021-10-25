@@ -149,6 +149,7 @@ public:
 	op_type get_ret_type(string s, bool isFormal);
 	op_type get_ret_type_ptr(string s);
 	bool check_basic(string s, bool checkSelfType);
+	bool check_basic_type(string s, bool checkSelfType);
 	void init_defaults();
 	void handle_inheritance();
 
@@ -163,6 +164,9 @@ public:
 
 	vector<op_type> vtableAttrTypes;
 	vector<op_type> myVtableAttrTypes;
+
+	vector<operand> formalOps;
+	vector<int> numFormalOps;
 
 
 private:
