@@ -117,9 +117,9 @@ Object* Object_copy(Object* self)
 
 Object* Object_new(void)
 {
-	Object temp;
 	Object *res = malloc(sizeof(Object));
-	memcpy(res, &temp, sizeof(Object));
+	//memcpy(res, &temp, sizeof(Object));
+	res->vtblptr = &Object_vtable_prototype;
 	return res;
 }
 
@@ -239,25 +239,28 @@ int IO_in_int(IO *self)
 
 Int* Int_new(void)
 {
-	Int temp;
 	Int *res = malloc(sizeof(Int));
-	memcpy(res, &temp, sizeof(Int));
+	res->val = 0;
+	res->vtblptr = &Int_vtable_prototype;
+	//memcpy(res, &temp, sizeof(Int));
 	return res;
 }
 
 Bool* Bool_new(void)
 {
-	Bool temp;
 	Bool *res = malloc(sizeof(Bool));
-	memcpy(res, &temp, sizeof(Bool));
+	res->val = false;
+	res->vtblptr = &Bool_vtable_prototype;
+	//memcpy(res, &temp, sizeof(Bool));
 	return res;
 }
 
 String* String_new(void)
 {
-	String temp;
 	String *res = malloc(sizeof(String));
-	memcpy(res, &temp, sizeof(String));
+	res->val = "";
+	res->vtblptr = &String_vtable_prototype;
+	//memcpy(res, &temp, sizeof(String));
 	return res;
 }
 
