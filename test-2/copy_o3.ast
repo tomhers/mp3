@@ -1,0 +1,230 @@
+#35
+_program
+  #6
+  _class
+    A
+    Object
+    "copy_o3.cl"
+    (
+    #2
+    _attr
+      a1
+      Int
+      #2
+      _no_expr
+      : _no_type
+    #3
+    _attr
+      a2
+      Bool
+      #3
+      _no_expr
+      : _no_type
+    #4
+    _attr
+      a3
+      String
+      #4
+      _no_expr
+      : _no_type
+    #5
+    _attr
+      a4
+      Int
+      #5
+      _no_expr
+      : _no_type
+    )
+  #13
+  _class
+    AA
+    A
+    "copy_o3.cl"
+    (
+    #9
+    _attr
+      aa1
+      Bool
+      #9
+      _no_expr
+      : _no_type
+    #10
+    _attr
+      aa2
+      Int
+      #10
+      _no_expr
+      : _no_type
+    #11
+    _method
+      set
+      #11
+      _formal
+        x
+        Int
+      Int
+      #11
+      _assign
+        aa2
+        #11
+        _object
+          x
+        : Int
+      : Int
+    #12
+    _method
+      get
+      Int
+      #12
+      _object
+        aa2
+      : Int
+    )
+  #35
+  _class
+    Main
+    IO
+    "copy_o3.cl"
+    (
+    #34
+    _method
+      main
+      SELF_TYPE
+      #34
+      _let
+        a
+        A
+        #19
+        _no_expr
+        : _no_type
+        #34
+        _let
+          copy_a
+          A
+          #21
+          _no_expr
+          : _no_type
+          #33
+          _block
+            #22
+            _assign
+              a
+              #22
+              _new
+                AA
+              : AA
+            : AA
+            #26
+            _typcase
+              #23
+              _object
+                a
+              : A
+              #24
+              _branch
+                aa
+                AA
+                #24
+                _dispatch
+                  #24
+                  _object
+                    aa
+                  : AA
+                  set
+                  (
+                  #24
+                  _int
+                    42
+                  : Int
+                  )
+                : Int
+              #25
+              _branch
+                o
+                Object
+                #25
+                _dispatch
+                  #25
+                  _object
+                    self
+                  : SELF_TYPE
+                  out_string
+                  (
+                  #25
+                  _string
+                    "Error1\n"
+                  : String
+                  )
+                : SELF_TYPE
+            : Object
+            #27
+            _assign
+              copy_a
+              #27
+              _dispatch
+                #27
+                _object
+                  a
+                : A
+                copy
+                (
+                )
+              : A
+            : A
+            #31
+            _typcase
+              #28
+              _object
+                copy_a
+              : A
+              #29
+              _branch
+                aa
+                AA
+                #29
+                _dispatch
+                  #29
+                  _object
+                    self
+                  : SELF_TYPE
+                  out_int
+                  (
+                  #29
+                  _dispatch
+                    #29
+                    _object
+                      aa
+                    : AA
+                    get
+                    (
+                    )
+                  : Int
+                  )
+                : SELF_TYPE
+              #30
+              _branch
+                o
+                Object
+                #30
+                _dispatch
+                  #30
+                  _object
+                    self
+                  : SELF_TYPE
+                  out_string
+                  (
+                  #30
+                  _string
+                    "Error2\n"
+                  : String
+                  )
+                : SELF_TYPE
+            : SELF_TYPE
+            #32
+            _object
+              self
+            : SELF_TYPE
+          : SELF_TYPE
+        : SELF_TYPE
+      : SELF_TYPE
+    )

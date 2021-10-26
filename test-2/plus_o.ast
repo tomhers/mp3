@@ -1,0 +1,55 @@
+#9
+_program
+  #9
+  _class
+    Main
+    IO
+    "plus_o.cl"
+    (
+    #5
+    _method
+      func
+      Int
+      #5
+      _plus
+        #5
+        _int
+          2
+        : Int
+        #5
+        _int
+          5
+        : Int
+      : Int
+    #8
+    _method
+      main
+      Object
+      #8
+      _block
+        #7
+        _dispatch
+          #7
+          _object
+            self
+          : SELF_TYPE
+          out_int
+          (
+          #7
+          _dispatch
+            #7
+            _object
+              self
+            : SELF_TYPE
+            func
+            (
+            )
+          : Int
+          )
+        : SELF_TYPE
+        #7
+        _object
+          self
+        : SELF_TYPE
+      : SELF_TYPE
+    )

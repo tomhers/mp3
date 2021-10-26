@@ -1,0 +1,635 @@
+#84
+_program
+  #3
+  _class
+    A
+    Object
+    "caseloop_o.cl"
+    (
+    )
+  #4
+  _class
+    B
+    A
+    "caseloop_o.cl"
+    (
+    )
+  #5
+  _class
+    C
+    B
+    "caseloop_o.cl"
+    (
+    )
+  #6
+  _class
+    D
+    C
+    "caseloop_o.cl"
+    (
+    )
+  #7
+  _class
+    E
+    D
+    "caseloop_o.cl"
+    (
+    )
+  #8
+  _class
+    F
+    E
+    "caseloop_o.cl"
+    (
+    )
+  #9
+  _class
+    G
+    F
+    "caseloop_o.cl"
+    (
+    )
+  #10
+  _class
+    H
+    G
+    "caseloop_o.cl"
+    (
+    )
+  #11
+  _class
+    I
+    H
+    "caseloop_o.cl"
+    (
+    )
+  #12
+  _class
+    J
+    I
+    "caseloop_o.cl"
+    (
+    )
+  #13
+  _class
+    K
+    J
+    "caseloop_o.cl"
+    (
+    )
+  #14
+  _class
+    L
+    K
+    "caseloop_o.cl"
+    (
+    )
+  #15
+  _class
+    M
+    L
+    "caseloop_o.cl"
+    (
+    )
+  #16
+  _class
+    N
+    M
+    "caseloop_o.cl"
+    (
+    )
+  #17
+  _class
+    O
+    N
+    "caseloop_o.cl"
+    (
+    )
+  #18
+  _class
+    P
+    O
+    "caseloop_o.cl"
+    (
+    )
+  #19
+  _class
+    Q
+    P
+    "caseloop_o.cl"
+    (
+    )
+  #84
+  _class
+    Main
+    IO
+    "caseloop_o.cl"
+    (
+    #83
+    _method
+      main
+      Object
+      #83
+      _let
+        i
+        Int
+        #24
+        _int
+          0
+        : Int
+        #83
+        _let
+          x
+          Int
+          #25
+          _int
+            0
+          : Int
+          #83
+          _let
+            a
+            Object
+            #26
+            _new
+              A
+            : A
+            #83
+            _let
+              q
+              Object
+              #27
+              _new
+                Q
+              : Q
+              #83
+              _let
+                result
+                Int
+                #29
+                _no_expr
+                : _no_type
+                #82
+                _block
+                  #52
+                  _loop
+                    #30
+                    _lt
+                      #30
+                      _object
+                        i
+                      : Int
+                      #30
+                      _int
+                        100
+                      : Int
+                    : Bool
+                    #52
+                    _block
+                      #50
+                      _assign
+                        result
+                        #50
+                        _typcase
+                          #32
+                          _object
+                            q
+                          : Object
+                          #33
+                          _branch
+                            x
+                            A
+                            #33
+                            _int
+                              1
+                            : Int
+                          #34
+                          _branch
+                            x
+                            B
+                            #34
+                            _int
+                              2
+                            : Int
+                          #35
+                          _branch
+                            x
+                            C
+                            #35
+                            _int
+                              3
+                            : Int
+                          #36
+                          _branch
+                            x
+                            D
+                            #36
+                            _int
+                              4
+                            : Int
+                          #37
+                          _branch
+                            x
+                            E
+                            #37
+                            _int
+                              5
+                            : Int
+                          #38
+                          _branch
+                            x
+                            F
+                            #38
+                            _int
+                              6
+                            : Int
+                          #39
+                          _branch
+                            x
+                            G
+                            #39
+                            _int
+                              7
+                            : Int
+                          #40
+                          _branch
+                            x
+                            H
+                            #40
+                            _int
+                              8
+                            : Int
+                          #41
+                          _branch
+                            x
+                            I
+                            #41
+                            _int
+                              9
+                            : Int
+                          #42
+                          _branch
+                            x
+                            J
+                            #42
+                            _int
+                              10
+                            : Int
+                          #43
+                          _branch
+                            x
+                            K
+                            #43
+                            _int
+                              11
+                            : Int
+                          #44
+                          _branch
+                            x
+                            L
+                            #44
+                            _int
+                              12
+                            : Int
+                          #45
+                          _branch
+                            x
+                            M
+                            #45
+                            _int
+                              13
+                            : Int
+                          #46
+                          _branch
+                            x
+                            N
+                            #46
+                            _int
+                              14
+                            : Int
+                          #47
+                          _branch
+                            x
+                            O
+                            #47
+                            _int
+                              15
+                            : Int
+                          #48
+                          _branch
+                            x
+                            P
+                            #48
+                            _int
+                              16
+                            : Int
+                          #49
+                          _branch
+                            x
+                            Q
+                            #49
+                            _int
+                              17
+                            : Int
+                        : Int
+                      : Int
+                      #51
+                      _assign
+                        i
+                        #51
+                        _plus
+                          #51
+                          _object
+                            i
+                          : Int
+                          #51
+                          _int
+                            1
+                          : Int
+                        : Int
+                      : Int
+                    : Int
+                  : Object
+                  #53
+                  _cond
+                    #53
+                    _comp
+                      #53
+                      _eq
+                        #53
+                        _object
+                          result
+                        : Int
+                        #53
+                        _int
+                          17
+                        : Int
+                      : Bool
+                    : Bool
+                    #53
+                    _assign
+                      x
+                      #53
+                      _plus
+                        #53
+                        _object
+                          x
+                        : Int
+                        #53
+                        _int
+                          1
+                        : Int
+                      : Int
+                    : Int
+                    #53
+                    _int
+                      0
+                    : Int
+                  : Int
+                  #55
+                  _assign
+                    i
+                    #55
+                    _int
+                      0
+                    : Int
+                  : Int
+                  #78
+                  _loop
+                    #56
+                    _lt
+                      #56
+                      _object
+                        i
+                      : Int
+                      #56
+                      _int
+                        10
+                      : Int
+                    : Bool
+                    #78
+                    _block
+                      #76
+                      _assign
+                        result
+                        #76
+                        _typcase
+                          #58
+                          _object
+                            a
+                          : Object
+                          #59
+                          _branch
+                            x
+                            A
+                            #59
+                            _int
+                              1
+                            : Int
+                          #60
+                          _branch
+                            x
+                            B
+                            #60
+                            _int
+                              2
+                            : Int
+                          #61
+                          _branch
+                            x
+                            C
+                            #61
+                            _int
+                              3
+                            : Int
+                          #62
+                          _branch
+                            x
+                            D
+                            #62
+                            _int
+                              4
+                            : Int
+                          #63
+                          _branch
+                            x
+                            E
+                            #63
+                            _int
+                              5
+                            : Int
+                          #64
+                          _branch
+                            x
+                            F
+                            #64
+                            _int
+                              6
+                            : Int
+                          #65
+                          _branch
+                            x
+                            G
+                            #65
+                            _int
+                              7
+                            : Int
+                          #66
+                          _branch
+                            x
+                            H
+                            #66
+                            _int
+                              8
+                            : Int
+                          #67
+                          _branch
+                            x
+                            I
+                            #67
+                            _int
+                              9
+                            : Int
+                          #68
+                          _branch
+                            x
+                            J
+                            #68
+                            _int
+                              10
+                            : Int
+                          #69
+                          _branch
+                            x
+                            K
+                            #69
+                            _int
+                              11
+                            : Int
+                          #70
+                          _branch
+                            x
+                            L
+                            #70
+                            _int
+                              12
+                            : Int
+                          #71
+                          _branch
+                            x
+                            M
+                            #71
+                            _int
+                              13
+                            : Int
+                          #72
+                          _branch
+                            x
+                            N
+                            #72
+                            _int
+                              14
+                            : Int
+                          #73
+                          _branch
+                            x
+                            O
+                            #73
+                            _int
+                              15
+                            : Int
+                          #74
+                          _branch
+                            x
+                            P
+                            #74
+                            _int
+                              16
+                            : Int
+                          #75
+                          _branch
+                            x
+                            Q
+                            #75
+                            _int
+                              17
+                            : Int
+                        : Int
+                      : Int
+                      #77
+                      _assign
+                        i
+                        #77
+                        _plus
+                          #77
+                          _object
+                            i
+                          : Int
+                          #77
+                          _int
+                            1
+                          : Int
+                        : Int
+                      : Int
+                    : Int
+                  : Object
+                  #79
+                  _cond
+                    #79
+                    _comp
+                      #79
+                      _eq
+                        #79
+                        _object
+                          result
+                        : Int
+                        #79
+                        _int
+                          1
+                        : Int
+                      : Bool
+                    : Bool
+                    #79
+                    _assign
+                      x
+                      #79
+                      _plus
+                        #79
+                        _object
+                          x
+                        : Int
+                        #79
+                        _int
+                          1
+                        : Int
+                      : Int
+                    : Int
+                    #79
+                    _int
+                      0
+                    : Int
+                  : Int
+                  #80
+                  _dispatch
+                    #80
+                    _object
+                      self
+                    : SELF_TYPE
+                    out_int
+                    (
+                    #80
+                    _object
+                      x
+                    : Int
+                    )
+                  : SELF_TYPE
+                  #81
+                  _object
+                    self
+                  : SELF_TYPE
+                : SELF_TYPE
+              : SELF_TYPE
+            : SELF_TYPE
+          : SELF_TYPE
+        : SELF_TYPE
+      : SELF_TYPE
+    )

@@ -1,0 +1,257 @@
+#44
+_program
+  #26
+  _class
+    Base
+    Object
+    "typename_o.cl"
+    (
+    #13
+    _method
+      identify
+      #8
+      _formal
+        thing
+        Object
+      #8
+      _formal
+        s
+        String
+      String
+      #12
+      _block
+        #11
+        _dispatch
+          #11
+          _dispatch
+            #11
+            _object
+              s
+            : String
+            concat
+            (
+            #11
+            _dispatch
+              #11
+              _object
+                thing
+              : Object
+              type_name
+              (
+              )
+            : String
+            )
+          : String
+          concat
+          (
+          #11
+          _string
+            "\n"
+          : String
+          )
+        : String
+      : String
+    #25
+    _method
+      test
+      #15
+      _formal
+        s
+        String
+      String
+      #24
+      _block
+        #18
+        _assign
+          s
+          #18
+          _dispatch
+            #18
+            _dispatch
+              #18
+              _dispatch
+                #18
+                _object
+                  s
+                : String
+                concat
+                (
+                #18
+                _dispatch
+                  #18
+                  _object
+                    self
+                  : SELF_TYPE
+                  identify
+                  (
+                  #18
+                  _new
+                    Base
+                  : Base
+                  #18
+                  _object
+                    s
+                  : String
+                  )
+                : String
+                )
+              : String
+              concat
+              (
+              #18
+              _dispatch
+                #18
+                _object
+                  self
+                : SELF_TYPE
+                identify
+                (
+                #18
+                _new
+                  Derived
+                : Derived
+                #18
+                _object
+                  s
+                : String
+                )
+              : String
+              )
+            : String
+            concat
+            (
+            #18
+            _dispatch
+              #18
+              _object
+                self
+              : SELF_TYPE
+              identify
+              (
+              #18
+              _new
+                Main
+              : Main
+              #18
+              _object
+                s
+              : String
+              )
+            : String
+            )
+          : String
+        : String
+        #21
+        _let
+          poly
+          Base
+          #20
+          _new
+            Derived
+          : Derived
+          #21
+          _assign
+            s
+            #21
+            _dispatch
+              #21
+              _object
+                self
+              : SELF_TYPE
+              identify
+              (
+              #21
+              _object
+                poly
+              : Base
+              #21
+              _object
+                s
+              : String
+              )
+            : String
+          : String
+        : String
+        #23
+        _dispatch
+          #23
+          _object
+            self
+          : SELF_TYPE
+          identify
+          (
+          #23
+          _object
+            self
+          : SELF_TYPE
+          #23
+          _object
+            s
+          : String
+          )
+        : String
+      : String
+    )
+  #31
+  _class
+    Derived
+    Base
+    "typename_o.cl"
+    (
+    )
+  #44
+  _class
+    Main
+    IO
+    "typename_o.cl"
+    (
+    #39
+    _method
+      func
+      String
+      #38
+      _dispatch
+        #38
+        _new
+          Derived
+        : Derived
+        test
+        (
+        #38
+        _string
+          ""
+        : String
+        )
+      : String
+    #43
+    _method
+      main
+      Object
+      #43
+      _block
+        #41
+        _dispatch
+          #41
+          _object
+            self
+          : SELF_TYPE
+          out_string
+          (
+          #41
+          _dispatch
+            #41
+            _object
+              self
+            : SELF_TYPE
+            func
+            (
+            )
+          : String
+          )
+        : SELF_TYPE
+        #42
+        _object
+          self
+        : SELF_TYPE
+      : SELF_TYPE
+    )
