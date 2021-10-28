@@ -167,7 +167,7 @@ public:
 
 	vector<operand> formalOps;
 	vector<int> numFormalOps;
-
+	op_type mainRetType;
 
 private:
 	// Layout the methods and attributes for code generation

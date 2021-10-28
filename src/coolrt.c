@@ -246,6 +246,11 @@ Int* Int_new(void)
 	return res;
 }
 
+void Int_init(Int *self, int x)
+{
+	self->val = x;
+}
+
 Bool* Bool_new(void)
 {
 	Bool *res = malloc(sizeof(Bool));

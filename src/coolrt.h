@@ -123,6 +123,7 @@ int IO_in_int(IO *self);
 
 /* methods in class Int */
 Int* Int_new(void);
+void Int_init(Int *self, int x);
 
 /* methods in class Bool */
 Bool* Bool_new(void);
